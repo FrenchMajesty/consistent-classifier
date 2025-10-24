@@ -51,7 +51,7 @@ func Example_customConfig() {
 		log.Fatal(err)
 	}
 
-	llmClient, err := adapters.NewDefaultLLMClient(nil, "", "", "")
+	llmClient, err := adapters.NewDefaultLLMClient(nil, "", "", "", nil)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -77,7 +78,7 @@ func NewClassifier(cfg Config) (*Classifier, error) {
 	if cfg.LLMClient != nil {
 		llmClient = cfg.LLMClient
 	} else {
-		client, err := adapters.NewDefaultLLMClient(nil, "", cfg.Model, cfg.BaseUrl)
+		client, err := adapters.NewDefaultLLMClient(nil, "", cfg.Model, cfg.BaseUrl, cfg.Temperature)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create default LLM client: %w", err)
 		}
@@ -119,6 +120,12 @@ func (c *Classifier) Classify(ctx context.Context, text string) (*Result, error)
 	}
 	c.closeLock.RUnlock()
 
+	// Skip empty or whitespace-only text
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return nil, fmt.Errorf("cannot classify empty text")
+	}
+
 	userFacingStart := time.Now()
 
 	// Step 1: Generate embedding for this text
@@ -159,6 +166,12 @@ func (c *Classifier) Classify(ctx context.Context, text string) (*Result, error)
 	label, err := c.llm.Classify(ctx, text)
 	if err != nil {
 		return nil, fmt.Errorf("failed to classify with LLM: %w", err)
+	}
+
+	// Validate label from LLM
+	label = strings.TrimSpace(label)
+	if label == "" {
+		return nil, fmt.Errorf("LLM returned empty label")
 	}
 
 	userFacingLatency := time.Since(userFacingStart)
@@ -259,6 +272,12 @@ func (c *Classifier) processBackgroundTasks(ctx context.Context, text string, em
 
 // updateLabelClustering finds similar labels and merges them in the DSU
 func (c *Classifier) updateLabelClustering(ctx context.Context, label string) error {
+	// Skip empty or whitespace-only labels
+	label = strings.TrimSpace(label)
+	if label == "" {
+		return nil
+	}
+
 	// Generate embedding for the label
 	labelEmbedding, err := c.embedding.GenerateEmbedding(ctx, label)
 	if err != nil {
@@ -298,6 +317,12 @@ func (c *Classifier) cacheTextEmbedding(ctx context.Context, text string, embedd
 
 // cacheLabelEmbedding stores the label embedding in the vector database
 func (c *Classifier) cacheLabelEmbedding(ctx context.Context, label string) error {
+	// Skip empty or whitespace-only labels
+	label = strings.TrimSpace(label)
+	if label == "" {
+		return nil
+	}
+
 	// Generate embedding for the label
 	labelEmbedding, err := c.embedding.GenerateEmbedding(ctx, label)
 	if err != nil {

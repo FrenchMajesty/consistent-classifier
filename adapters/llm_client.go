@@ -14,6 +14,7 @@ type DefaultLLMClient struct {
 	systemPrompt string
 	model        string
 	baseUrl      string
+	temperature  *float32 // Optional temperature. If nil, omit from request.
 }
 
 const defaultModel = "gpt-4.1-mini"
@@ -26,7 +27,7 @@ Rules:
 - Be consistent: similar texts should get the same label`
 
 // NewDefaultLLMClient creates a new LLM client using OpenAI with API key from environment
-func NewDefaultLLMClient(apiKey *string, systemPrompt string, model string, baseUrl string) (*DefaultLLMClient, error) {
+func NewDefaultLLMClient(apiKey *string, systemPrompt string, model string, baseUrl string, temperature *float32) (*DefaultLLMClient, error) {
 	key, err := loadEnvVar(apiKey, "OPENAI_API_KEY")
 	if err != nil {
 		return nil, err
@@ -37,6 +38,7 @@ func NewDefaultLLMClient(apiKey *string, systemPrompt string, model string, base
 		systemPrompt: defaultSystemPrompt,
 		model:        defaultModel,
 		baseUrl:      baseUrl,
+		temperature:  temperature,
 	}
 
 	if systemPrompt != "" {
@@ -64,8 +66,12 @@ func (c *DefaultLLMClient) Classify(ctx context.Context, text string) (string, e
 				Content: &text,
 			},
 		},
-		Temperature:         0.3,
 		MaxCompletionTokens: 50,
+	}
+
+	// Only set temperature if specified (some models like gpt-5-nano don't support it)
+	if c.temperature != nil {
+		req.Temperature = *c.temperature
 	}
 
 	resp, err := c.client.ChatCompletion(ctx, req)

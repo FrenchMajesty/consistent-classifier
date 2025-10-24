@@ -18,9 +18,10 @@ type Config struct {
 	VectorClientContent VectorClient
 
 	// LLMClient performs text classification. If nil, uses the default (OpenAI).
-	LLMClient LLMClient
-	Model     string
-	BaseUrl   string
+	LLMClient   LLMClient
+	Model       string
+	BaseUrl     string
+	Temperature *float32 // Optional temperature for LLM. If nil, uses model default.
 
 	// DSUPersistence handles loading/saving the label clustering state. If nil, uses file-based persistence at ./dsu_state.bin
 	DSUPersistence DisjointSetPersistence

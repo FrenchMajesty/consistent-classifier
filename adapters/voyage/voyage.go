@@ -58,8 +58,7 @@ func (es *voyageService) SetModel(model string) {
 // GenerateEmbedding generates an embedding for a single text using VoyageAI
 func (es *voyageService) GenerateEmbedding(ctx context.Context, text string, embeddingType VoyageEmbeddingType) ([]float32, error) {
 	dimensions := es.GetEmbeddingDimensions()
-	var inputType *string
-	parseEmbeddingType(embeddingType, inputType)
+	inputType := parseEmbeddingType(embeddingType)
 
 	embeddings, err := client.Embed(
 		[]string{text},
@@ -80,8 +79,7 @@ func (es *voyageService) GenerateEmbedding(ctx context.Context, text string, emb
 // GenerateEmbeddings generates embeddings for multiple texts using VoyageAI
 func (es *voyageService) GenerateEmbeddings(ctx context.Context, texts []string, embeddingType VoyageEmbeddingType) ([]voyageai.EmbeddingObject, error) {
 	dimensions := es.GetEmbeddingDimensions()
-	var inputType *string
-	parseEmbeddingType(embeddingType, inputType)
+	inputType := parseEmbeddingType(embeddingType)
 
 	embeddings, err := client.Embed(
 		texts,
@@ -99,10 +97,12 @@ func (es *voyageService) GenerateEmbeddings(ctx context.Context, texts []string,
 	return embeddings.Data, nil
 }
 
-func parseEmbeddingType(embeddingType VoyageEmbeddingType, target *string) {
+func parseEmbeddingType(embeddingType VoyageEmbeddingType) *string {
 	if embeddingType != VoyageEmbeddingTypeDefault {
-		*target = string(embeddingType)
+		value := string(embeddingType)
+		return &value
 	}
+	return nil
 }
 
 // GetEmbeddingDimensions returns the dimension count for the embedding model
